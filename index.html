@@ -6,45 +6,34 @@
 <title>HandConnect — Hand Tracking</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
-  :root {
-    --bg:#080b0f; --panel:#0d1117; --border:rgba(255,255,255,0.07);
-    --accent:#00ffe0; --accent2:#ff4fd8; --accent3:#ffe500;
-    --text:#e8edf5; --muted:#5a6478; --green:#00ff88; --red:#ff4444;
-  }
+  :root{--bg:#080b0f;--panel:#0d1117;--border:rgba(255,255,255,0.07);--accent:#00ffe0;--accent2:#ff4fd8;--accent3:#ffe500;--text:#e8edf5;--muted:#5a6478;--green:#00ff88;--red:#ff4444;}
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
   .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;}
   .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--accent);}
   .logo span{color:var(--text);}
-  #statusDot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;transition:background .3s;}
+  #statusDot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;}
   #statusDot.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.5s infinite;}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
-  #statusText{font-size:11px;color:var(--muted);}
-  #statusText.on{color:var(--green);}
+  #statusText{font-size:11px;color:var(--muted);}#statusText.on{color:var(--green);}
   .main{display:flex;flex:1;overflow:hidden;}
   .video-area{flex:1;position:relative;background:#000;}
-  video{position:absolute;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);opacity:0;}
-  canvas{position:absolute;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
-  .scanlines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:5;}
+  video{position:absolute;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none;}
+  canvas{position:absolute;width:100%;height:100%;}
   .corner{position:absolute;width:22px;height:22px;border-color:var(--accent);border-style:solid;opacity:.5;z-index:6;}
-  .corner.tl{top:14px;left:14px;border-width:2px 0 0 2px;}
-  .corner.tr{top:14px;right:14px;border-width:2px 2px 0 0;}
-  .corner.bl{bottom:14px;left:14px;border-width:0 0 2px 2px;}
-  .corner.br{bottom:14px;right:14px;border-width:0 2px 2px 0;}
-  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,11,15,.95);z-index:20;gap:16px;transition:opacity .4s;padding:20px;}
+  .corner.tl{top:14px;left:14px;border-width:2px 0 0 2px;}.corner.tr{top:14px;right:14px;border-width:2px 2px 0 0;}
+  .corner.bl{bottom:14px;left:14px;border-width:0 0 2px 2px;}.corner.br{bottom:14px;right:14px;border-width:0 2px 2px 0;}
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,11,15,.95);z-index:20;gap:16px;padding:20px;transition:opacity .4s;}
   .overlay.gone{opacity:0;pointer-events:none;}
   .ov-icon{font-size:56px;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 0 18px var(--accent));}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
   .ov-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;text-align:center;}
   .ov-sub{font-size:11px;color:var(--muted);text-align:center;max-width:260px;line-height:1.8;}
   #errBox{font-size:11px;color:var(--red);background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.25);border-radius:3px;padding:8px 12px;display:none;max-width:280px;text-align:center;line-height:1.6;}
-  #startBtn{background:var(--accent);color:var(--bg);border:none;padding:12px 32px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;border-radius:2px;text-transform:uppercase;transition:all .2s;}
-  #startBtn:hover{background:#fff;}
+  #startBtn{background:var(--accent);color:var(--bg);border:none;padding:12px 32px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;border-radius:2px;text-transform:uppercase;}
   #startBtn:disabled{opacity:.5;cursor:not-allowed;}
   .ring{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,255,224,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
   @keyframes spin{to{transform:rotate(360deg)}}
-
-  /* SIDE PANEL */
   .side{width:200px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
   .sec{padding:11px 13px;border-bottom:1px solid var(--border);}
   .lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
@@ -65,88 +54,68 @@
   .track{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;}
   .fill{height:100%;border-radius:2px;transition:width .1s;}
   .fps-bars{display:flex;gap:2px;margin-top:4px;}
-  .fb{flex:1;height:13px;background:rgba(255,255,255,.05);border-radius:1px;transition:background .1s;}
+  .fb{flex:1;height:13px;background:rgba(255,255,255,.05);border-radius:1px;}
   .fb.l{background:var(--green)}.fb.m{background:var(--accent3)}.fb.s{background:var(--red)}
   .leg{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
   .ld{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
   .ll{font-size:10px;color:var(--muted);}
-
-  /* PERF TOGGLE */
   .perf-row{display:flex;gap:6px;flex-wrap:wrap;}
-  .ptag{font-size:10px;padding:3px 8px;border-radius:2px;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;}
+  .ptag{font-size:10px;padding:3px 8px;border-radius:2px;border:1px solid var(--border);color:var(--muted);cursor:pointer;}
   .ptag.active{border-color:var(--accent);color:var(--accent);background:rgba(0,255,224,.07);}
 </style>
 </head>
 <body>
-
 <div class="topbar">
   <div class="logo">Hand<span>Connect</span></div>
-  <div style="display:flex;align-items:center;gap:6px">
-    <span id="statusDot"></span><span id="statusText">Inactive</span>
-  </div>
-  <div style="font-size:10px;color:var(--muted)">TF.js · v2</div>
+  <div style="display:flex;align-items:center;gap:6px"><span id="statusDot"></span><span id="statusText">Inactive</span></div>
+  <div style="font-size:10px;color:var(--muted)">TF.js · v3</div>
 </div>
-
 <div class="main">
   <div class="video-area">
     <video id="video" playsinline autoplay muted></video>
     <canvas id="canvas"></canvas>
-    <div class="scanlines"></div>
     <div class="corner tl"></div><div class="corner tr"></div>
     <div class="corner bl"></div><div class="corner br"></div>
-
     <div class="overlay" id="overlay">
       <div class="ov-icon">🖐️</div>
       <div class="ov-title">HandConnect</div>
-      <div class="ov-sub">21-point skeleton · gesture detection · optimised for mobile</div>
+      <div class="ov-sub">21-point skeleton · gesture detection · mobile optimised</div>
       <div id="errBox"></div>
       <button id="startBtn">Enable Camera</button>
     </div>
   </div>
-
   <div class="side">
     <div class="sec">
       <div class="lbl">Live Stats</div>
       <div class="row"><span class="rk">Hands</span><span class="rv" id="hCount">0</span></div>
-      <div class="row"><span class="rk">FPS</span><span class="rv ok" id="fpsEl">—</span></div>
-      <div class="fps-bars" id="fpsBars">
-        <div class="fb"></div><div class="fb"></div><div class="fb"></div><div class="fb"></div>
-        <div class="fb"></div><div class="fb"></div><div class="fb"></div><div class="fb"></div>
-        <div class="fb"></div><div class="fb"></div>
+      <div class="row"><span class="rk">Render FPS</span><span class="rv ok" id="fpsEl">—</span></div>
+      <div class="fps-bars">
+        <div class="fb" id="fb0"></div><div class="fb" id="fb1"></div><div class="fb" id="fb2"></div>
+        <div class="fb" id="fb3"></div><div class="fb" id="fb4"></div><div class="fb" id="fb5"></div>
+        <div class="fb" id="fb6"></div><div class="fb" id="fb7"></div><div class="fb" id="fb8"></div><div class="fb" id="fb9"></div>
       </div>
+      <div class="row" style="margin-top:6px"><span class="rk">Detect FPS</span><span class="rv" id="dfpsEl">—</span></div>
     </div>
-
-    <!-- PERFORMANCE MODE -->
     <div class="sec">
       <div class="lbl">Performance</div>
       <div class="perf-row">
-        <div class="ptag" id="pSmooth" onclick="setPerf('smooth')">Smooth</div>
-        <div class="ptag active" id="pBalanced" onclick="setPerf('balanced')">Balanced</div>
-        <div class="ptag" id="pFast" onclick="setPerf('fast')">Fast</div>
+        <div class="ptag" id="pHigh" onclick="setPerf('high')">High</div>
+        <div class="ptag active" id="pMid" onclick="setPerf('mid')">Mid</div>
+        <div class="ptag" id="pLow" onclick="setPerf('low')">Low</div>
       </div>
-      <div style="font-size:10px;color:var(--muted);margin-top:6px;" id="perfDesc">
-        Detects every 2nd frame
-      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px" id="perfDesc">~15 detections/sec</div>
     </div>
-
     <div class="sec">
       <div class="lbl">Gesture</div>
-      <div class="gbox">
-        <span id="gicon">✋</span>
-        <div id="gname">—</div>
-        <div id="gsub">No hand detected</div>
-      </div>
+      <div class="gbox"><span id="gicon">✋</span><div id="gname">—</div><div id="gsub">No hand detected</div></div>
     </div>
-
     <div class="sec">
       <div class="lbl">Finger State</div>
       <div class="frow">
         <div class="fp" id="f0">T</div><div class="fp" id="f1">I</div>
-        <div class="fp" id="f2">M</div><div class="fp" id="f3">R</div>
-        <div class="fp" id="f4">P</div>
+        <div class="fp" id="f2">M</div><div class="fp" id="f3">R</div><div class="fp" id="f4">P</div>
       </div>
     </div>
-
     <div class="sec">
       <div class="lbl">Metrics</div>
       <div class="bar-wrap">
@@ -158,7 +127,6 @@
         <div class="track"><div class="fill" id="cuB" style="width:0%;background:var(--accent2)"></div></div>
       </div>
     </div>
-
     <div class="sec">
       <div class="lbl">Colors</div>
       <div class="leg"><div class="ld" style="background:#ff4fd8"></div><span class="ll">Thumb</span></div>
@@ -173,42 +141,17 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.0/dist/hand-pose-detection.js"></script>
 <script>
-const video    = document.getElementById('video');
-const canvas   = document.getElementById('canvas');
-const ctx      = canvas.getContext('2d');
-const overlay  = document.getElementById('overlay');
-const errBox   = document.getElementById('errBox');
-const startBtn = document.getElementById('startBtn');
-const statusDot= document.getElementById('statusDot');
-const statusTxt= document.getElementById('statusText');
-const fpsEl    = document.getElementById('fpsEl');
-const hCountEl = document.getElementById('hCount');
-const gicon    = document.getElementById('gicon');
-const gname    = document.getElementById('gname');
-const gsub     = document.getElementById('gsub');
-const spV=document.getElementById('spV'), spB=document.getElementById('spB');
-const cuV=document.getElementById('cuV'), cuB=document.getElementById('cuB');
-const fpsBlocks= document.querySelectorAll('.fb');
-const perfDesc = document.getElementById('perfDesc');
+// ── DOM refs ──────────────────────────────────────────────
+const video     = document.getElementById('video');
+const canvas    = document.getElementById('canvas');
+const ctx       = canvas.getContext('2d');
+const overlay   = document.getElementById('overlay');
+const errBox    = document.getElementById('errBox');
+const startBtn  = document.getElementById('startBtn');
+const statusDot = document.getElementById('statusDot');
+const statusTxt = document.getElementById('statusText');
 
-// Performance modes: skipN = run detection every N frames
-const PERF = {
-  smooth:   { skip:1, res:480, desc:'Detects every frame (may lag)' },
-  balanced: { skip:2, res:320, desc:'Detects every 2nd frame' },
-  fast:     { skip:3, res:240, desc:'Detects every 3rd frame (fastest)' },
-};
-let perfMode = 'balanced';
-let skipN = 2;
-
-function setPerf(mode) {
-  perfMode = mode;
-  skipN = PERF[mode].skip;
-  perfDesc.textContent = PERF[mode].desc;
-  ['pSmooth','pBalanced','pFast'].forEach(id => document.getElementById(id).classList.remove('active'));
-  document.getElementById('p' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
-}
-
-// Connections
+// ── MediaPipe connections ─────────────────────────────────
 const CONN = [
   [0,1],[1,2],[2,3],[3,4],
   [0,5],[5,6],[6,7],[7,8],
@@ -217,8 +160,19 @@ const CONN = [
   [13,17],[17,18],[18,19],[19,20],
   [0,17],[0,9]
 ];
+const TIPS = [4, 8, 12, 16, 20];
+const PIPS = [3, 7, 11, 15, 19]; // one below each tip
+const MCPS = [2, 6, 10, 14, 18]; // two below each tip
 
-function boneColor(a,b){
+function jointColor(i){
+  if(i===0)   return '#ffffff';
+  if(i<=4)    return '#ff4fd8';
+  if(i<=8)    return '#00ffe0';
+  if(i<=12)   return '#ffe500';
+  if(i<=16)   return '#00ff88';
+  return '#ff7043';
+}
+function boneColor(a, b){
   const palm=[[0,5],[0,9],[0,17],[5,9],[9,13],[13,17]];
   for(const [x,y] of palm) if((a===x&&b===y)||(a===y&&b===x)) return '#ffffff';
   const m=Math.min(a,b);
@@ -226,62 +180,107 @@ function boneColor(a,b){
   if(m<=12) return '#ffe500'; if(m<=16) return '#00ff88';
   return '#ff7043';
 }
-function jointColor(i){
-  if(i===0) return '#ffffff'; if(i<=4) return '#ff4fd8';
-  if(i<=8) return '#00ffe0'; if(i<=12) return '#ffe500';
-  if(i<=16) return '#00ff88'; return '#ff7043';
+
+// ── Geometry ──────────────────────────────────────────────
+function d2(a, b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+// Finger extension: use angle at PIP joint (more robust than wrist distance)
+function isExtended(kp, tipIdx, pipIdx, mcpIdx){
+  const tip=kp[tipIdx], pip=kp[pipIdx], mcp=kp[mcpIdx];
+  // Vector from mcp→pip and pip→tip
+  const v1x=pip.x-mcp.x, v1y=pip.y-mcp.y;
+  const v2x=tip.x-pip.x, v2y=tip.y-pip.y;
+  const dot=v1x*v2x+v1y*v2y;
+  const mag=Math.hypot(v1x,v1y)*Math.hypot(v2x,v2y);
+  if(mag===0) return false;
+  // Angle at PIP < 90° means finger is relatively straight (extended)
+  const cosA=dot/mag;
+  return cosA > 0.1; // ~84° threshold
 }
-function d2(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
-function extended(kp,tip,pip){ return d2(kp[tip],kp[0])>d2(kp[pip],kp[0]); }
+
+function thumbExtended(kp){
+  // Thumb: compare tip distance from index MCP vs thumb IP joint
+  return d2(kp[4], kp[5]) > d2(kp[3], kp[5]);
+}
+
 function fingerStates(kp){
   return {
-    thumb: d2(kp[4],kp[17])>d2(kp[3],kp[17]),
-    index: extended(kp,8,6), middle: extended(kp,12,10),
-    ring: extended(kp,16,14), pinky: extended(kp,20,18)
+    thumb:  thumbExtended(kp),
+    index:  isExtended(kp, 8,  7,  6),
+    middle: isExtended(kp, 12, 11, 10),
+    ring:   isExtended(kp, 16, 15, 14),
+    pinky:  isExtended(kp, 20, 19, 18),
   };
 }
+
 function detectGesture(kp){
-  const f=fingerStates(kp);
-  const n=[f.thumb,f.index,f.middle,f.ring,f.pinky].filter(Boolean).length;
+  const f = fingerStates(kp);
+  const n = [f.thumb,f.index,f.middle,f.ring,f.pinky].filter(Boolean).length;
   if(!f.thumb&&!f.index&&!f.middle&&!f.ring&&!f.pinky) return{icon:'✊',name:'Fist',sub:'All curled'};
-  if(f.thumb&&f.index&&f.middle&&f.ring&&f.pinky) return{icon:'🖐',name:'Open Hand',sub:'5 fingers up'};
+  if(f.thumb&&f.index&&f.middle&&f.ring&&f.pinky)       return{icon:'🖐',name:'Open Hand',sub:'All extended'};
   if(f.thumb&&!f.index&&!f.middle&&!f.ring&&!f.pinky)
-    return kp[4].y<kp[3].y?{icon:'👍',name:'Thumbs Up',sub:''}:{icon:'👎',name:'Thumbs Down',sub:''};
+    return kp[4].y < kp[0].y ? {icon:'👍',name:'Thumbs Up',sub:''} : {icon:'👎',name:'Thumbs Down',sub:''};
   if(!f.thumb&&f.index&&f.middle&&!f.ring&&!f.pinky) return{icon:'✌️',name:'Peace',sub:'Index + Middle'};
   if(!f.thumb&&f.index&&!f.middle&&!f.ring&&!f.pinky) return{icon:'☝️',name:'Pointing',sub:'Index only'};
-  if(!f.thumb&&f.index&&!f.middle&&!f.ring&&f.pinky) return{icon:'🤘',name:'Rock On',sub:'Index + Pinky'};
-  if(f.thumb&&!f.index&&!f.middle&&!f.ring&&f.pinky) return{icon:'🤙',name:'Call Me',sub:'Thumb + Pinky'};
-  if(d2(kp[4],kp[8])<30&&f.middle&&f.ring&&f.pinky) return{icon:'👌',name:'OK Sign',sub:''};
+  if(!f.thumb&&f.index&&!f.middle&&!f.ring&&f.pinky)  return{icon:'🤘',name:'Rock On',sub:'Index + Pinky'};
+  if(f.thumb&&!f.index&&!f.middle&&!f.ring&&f.pinky)  return{icon:'🤙',name:'Call Me',sub:'Thumb + Pinky'};
   if(!f.thumb&&!f.index&&f.middle&&!f.ring&&!f.pinky) return{icon:'🖕',name:'Middle',sub:'Middle only'};
-  return{icon:'✋',name:`${n} Fingers`,sub:'Custom'};
+  if(d2(kp[4],kp[8])<canvas.width*0.06&&f.middle&&f.ring&&f.pinky) return{icon:'👌',name:'OK Sign',sub:''};
+  return{icon:'✋',name:`${n} fingers`,sub:'Custom pose'};
 }
+
 function getSpread(kp){
   const tips=[kp[4],kp[8],kp[12],kp[16],kp[20]];
   let m=0;
   for(let i=0;i<tips.length;i++) for(let j=i+1;j<tips.length;j++) m=Math.max(m,d2(tips[i],tips[j]));
-  return Math.min((m/canvas.width)*400,100);
+  return Math.min((m/(canvas.width*0.5))*100, 100);
 }
 function getCurl(kp){
   const f=fingerStates(kp);
-  return([!f.index,!f.middle,!f.ring,!f.pinky].filter(Boolean).length/4)*100;
+  return ([!f.index,!f.middle,!f.ring,!f.pinky].filter(Boolean).length/4)*100;
 }
 
+// ── Draw skeleton ─────────────────────────────────────────
+// Detect if mobile for shadow budget
+const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+
 function drawSkeleton(kp){
-  // Bones - slightly thinner for speed
+  const useShadow = !isMobile; // shadows are very expensive on mobile canvas
+
+  // Bones
   for(const [a,b] of CONN){
-    const p1=kp[a],p2=kp[b],c=boneColor(a,b);
-    ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y);
-    ctx.strokeStyle=c; ctx.lineWidth=2.5;
-    ctx.shadowBlur=10; ctx.shadowColor=c;
-    ctx.stroke(); ctx.shadowBlur=0;
+    const p1=kp[a], p2=kp[b], c=boneColor(a,b);
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.strokeStyle = c;
+    ctx.lineWidth = isMobile ? 3 : 3;
+    if(useShadow){ ctx.shadowBlur=10; ctx.shadowColor=c; }
+    ctx.stroke();
+    if(useShadow) ctx.shadowBlur=0;
   }
+
+  // On mobile: draw a single glow pass using globalAlpha instead of shadowBlur
+  if(isMobile){
+    ctx.globalAlpha = 0.25;
+    for(const [a,b] of CONN){
+      const p1=kp[a], p2=kp[b], c=boneColor(a,b);
+      ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y);
+      ctx.strokeStyle=c; ctx.lineWidth=8; ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
   // Joints
   for(let i=0;i<kp.length;i++){
-    const p=kp[i],c=jointColor(i);
-    const isTip=[4,8,12,16,20].includes(i);
+    const p=kp[i], c=jointColor(i);
+    const isTip=TIPS.includes(i);
     const r=i===0?7:isTip?6:4;
     ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
-    ctx.fillStyle=c; ctx.shadowBlur=12; ctx.shadowColor=c; ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle=c;
+    if(useShadow){ ctx.shadowBlur=10; ctx.shadowColor=c; }
+    ctx.fill();
+    if(useShadow) ctx.shadowBlur=0;
     if(isTip){
       ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2);
       ctx.fillStyle='#fff'; ctx.fill();
@@ -289,127 +288,144 @@ function drawSkeleton(kp){
   }
 }
 
-// FPS
-let lastT=0,frames=0,fps=0;
+// ── FPS tracking ──────────────────────────────────────────
+let rFrm=0, rLast=0, rFps=0;
+let dFrm=0, dLast=0, dFps=0;
 const fpsHist=new Array(10).fill(0);
-function tickFPS(now){
-  frames++;
-  if(now-lastT>=1000){
-    fps=Math.round(frames*1000/(now-lastT));
-    frames=0; lastT=now;
-    fpsHist.shift(); fpsHist.push(fps);
-    fpsBlocks.forEach((b,i)=>{
+
+function tickRenderFPS(now){
+  rFrm++;
+  if(now-rLast>=1000){
+    rFps=Math.round(rFrm*1000/(now-rLast));
+    rFrm=0; rLast=now;
+    fpsHist.shift(); fpsHist.push(rFps);
+    for(let i=0;i<10;i++){
+      const b=document.getElementById('fb'+i);
       b.className='fb';
       if(fpsHist[i]>0) b.classList.add(fpsHist[i]>40?'l':fpsHist[i]>20?'m':'s');
-    });
+    }
   }
-  fpsEl.textContent=fps||'—';
-  fpsEl.className='rv '+(fps>40?'ok':fps>20?'warn':'');
+  document.getElementById('fpsEl').textContent=rFps||'—';
+  document.getElementById('fpsEl').className='rv '+(rFps>40?'ok':rFps>20?'warn':'');
+}
+function tickDetectFPS(now){
+  dFrm++;
+  if(now-dLast>=1000){
+    dFps=Math.round(dFrm*1000/(now-dLast));
+    dFrm=0; dLast=now;
+  }
+  document.getElementById('dfpsEl').textContent=dFps||'—';
 }
 
+// ── UI update ─────────────────────────────────────────────
 function updateUI(hands){
   const n=hands.length;
-  hCountEl.textContent=n;
-  hCountEl.className='rv '+(n>0?'ok':'');
+  const hEl=document.getElementById('hCount');
+  hEl.textContent=n; hEl.className='rv '+(n>0?'ok':'');
   if(!n){
-    gicon.textContent='✋'; gname.textContent='—'; gsub.textContent='No hand detected';
-    spV.textContent='0%'; spB.style.width='0%';
-    cuV.textContent='0%'; cuB.style.width='0%';
+    document.getElementById('gicon').textContent='✋';
+    document.getElementById('gname').textContent='—';
+    document.getElementById('gsub').textContent='No hand detected';
+    document.getElementById('spV').textContent='0%'; document.getElementById('spB').style.width='0%';
+    document.getElementById('cuV').textContent='0%'; document.getElementById('cuB').style.width='0%';
     for(let i=0;i<5;i++) document.getElementById('f'+i).className='fp';
     return;
   }
   const kp=hands[0].keypoints;
   const g=detectGesture(kp);
-  gicon.textContent=g.icon; gname.textContent=g.name; gsub.textContent=g.sub;
+  document.getElementById('gicon').textContent=g.icon;
+  document.getElementById('gname').textContent=g.name;
+  document.getElementById('gsub').textContent=g.sub;
   const sp=Math.round(getSpread(kp)), cu=Math.round(getCurl(kp));
-  spV.textContent=sp+'%'; spB.style.width=sp+'%';
-  cuV.textContent=cu+'%'; cuB.style.width=cu+'%';
+  document.getElementById('spV').textContent=sp+'%'; document.getElementById('spB').style.width=sp+'%';
+  document.getElementById('cuV').textContent=cu+'%'; document.getElementById('cuB').style.width=cu+'%';
   const f=fingerStates(kp);
   ['thumb','index','middle','ring','pinky'].forEach((k,i)=>{
     document.getElementById('f'+i).className='fp'+(f[k]?' on':'');
   });
 }
 
+// ── Performance modes ─────────────────────────────────────
+const PERF={
+  high:{ interval:50,  desc:'~20 detections/sec' },
+  mid: { interval:80,  desc:'~12 detections/sec' },
+  low: { interval:150, desc:'~7 detections/sec'  },
+};
+let detectInterval=80;
+
+function setPerf(mode){
+  detectInterval=PERF[mode].interval;
+  document.getElementById('perfDesc').textContent=PERF[mode].desc;
+  ['pHigh','pMid','pLow'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('p'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.add('active');
+}
+
+// ── Canvas resize ─────────────────────────────────────────
 function resize(){
   const a=document.querySelector('.video-area');
   canvas.width=a.clientWidth; canvas.height=a.clientHeight;
 }
-window.addEventListener('resize',resize);
+window.addEventListener('resize', resize);
 
-// Offscreen canvas for faster video draw
-const offscreen = document.createElement('canvas');
-const offCtx = offscreen.getContext('2d');
+// ── State ─────────────────────────────────────────────────
+let detector=null, running=false;
+let lastHands=[], detecting=false;
+let lastDetectTime=0;
 
-let detector=null, running=false, frameIdx=0, lastHands=[];
-
-async function loop(){
+// ── RENDER loop (always 60fps, never blocks) ──────────────
+function renderLoop(now){
   if(!running) return;
-  const now=performance.now();
-  tickFPS(now);
+  tickRenderFPS(now);
 
   if(video.readyState>=2 && video.videoWidth>0){
-    // Draw video straight — CSS scaleX(-1) on canvas handles the selfie mirror
-    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    const W=canvas.width, H=canvas.height;
 
-    // Only run detection every skipN frames
-    if(frameIdx % skipN === 0){
-      // Detect on lower-res offscreen for speed
-      const res = PERF[perfMode].res;
-      const aspect = video.videoHeight / video.videoWidth;
-      offscreen.width = res;
-      offscreen.height = Math.max(1, Math.round(res * aspect));
-      offCtx.drawImage(video,0,0,offscreen.width,offscreen.height);
+    // Draw video mirrored (selfie style) — manual flip, no CSS transform needed
+    ctx.save();
+    ctx.translate(W, 0); ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, W, H);
+    ctx.restore();
 
-      try {
-        lastHands = await detector.estimateHands(offscreen, {flipHorizontal:false});
-      } catch(e) { lastHands=[]; }
-
-      // Scale keypoints to canvas size
-      const sx=canvas.width/offscreen.width, sy=canvas.height/offscreen.height;
-      lastHands = lastHands.map(h=>({
-        ...h,
-        keypoints: h.keypoints.map(kp=>({...kp, x:kp.x*sx, y:kp.y*sy}))
-      }));
-      updateUI(lastHands);
-    }
-
-    // Always draw last known skeleton (smooth even when skipping detection)
-    lastHands.forEach(h=>drawSkeleton(h.keypoints));
-    frameIdx++;
+    // Draw last known skeleton on top
+    // keypoints come from estimateHands with flipHorizontal:true
+    // so they are already in the mirrored coordinate space → draw directly
+    lastHands.forEach(h => drawSkeleton(h.keypoints));
   }
 
-  requestAnimationFrame(loop);
+  requestAnimationFrame(renderLoop);
 }
 
-startBtn.addEventListener('click', async()=>{
-  startBtn.disabled=true;
-  startBtn.innerHTML='<span class="ring"></span> Loading…';
-  errBox.style.display='none';
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video:{width:{ideal:640},height:{ideal:480},facingMode:'user'}
-    });
-    video.srcObject=stream; await video.play();
-    resize();
-    await tf.setBackend('webgl');
-    await tf.ready();
-    detector = await handPoseDetection.createDetector(
-      handPoseDetection.SupportedModels.MediaPipeHands,
-      {runtime:'tfjs', modelType:'lite', maxHands:2}
-    );
-    running=true;
-    overlay.classList.add('gone');
-    statusDot.classList.add('on');
-    statusTxt.textContent='Live'; statusTxt.className='on';
-    loop();
-  } catch(e){
-    startBtn.disabled=false; startBtn.textContent='Try Again';
-    errBox.style.display='block';
-    errBox.textContent = e.name==='NotAllowedError'
-      ? '⚠ Camera denied. Tap the lock icon in your address bar → allow camera.'
-      : '⚠ '+e.message;
+// ── DETECTION loop (time-based, non-blocking) ─────────────
+async function detectLoop(){
+  if(!running) return;
+  const now=performance.now();
+
+  if(!detecting && video.readyState>=2 && video.videoWidth>0 && now-lastDetectTime>=detectInterval){
+    detecting=true;
+    lastDetectTime=now;
+    try{
+      // flipHorizontal:true → keypoints returned in mirrored space
+      // Scale them to canvas size after
+      const raw = await detector.estimateHands(video, {flipHorizontal:true});
+
+      const scaleX = canvas.width  / video.videoWidth;
+      const scaleY = canvas.height / video.videoHeight;
+
+      lastHands = raw.map(h=>({
+        ...h,
+        keypoints: h.keypoints.map(kp=>({
+          ...kp,
+          x: kp.x * scaleX,
+          y: kp.y * scaleY,
+        }))
+      }));
+
+      updateUI(lastHands);
+      tickDetectFPS(performance.now());
+    } catch(e){
+      lastHands=[];
+    }
+    detecting=false;
   }
-});
-</script>
-</body>
-</html>
+
+  setTimeout(detectLoop, 16); // check 
