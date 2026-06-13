@@ -347,18 +347,17 @@ async function loop(){
   const now=performance.now();
   tickFPS(now);
 
-  if(video.readyState>=2){
-    // Always draw video
-    ctx.save();
-    ctx.translate(canvas.width,0); ctx.scale(-1,1);
+  if(video.readyState>=2 && video.videoWidth>0){
+    // Draw video straight — CSS scaleX(-1) on canvas handles the selfie mirror
     ctx.drawImage(video,0,0,canvas.width,canvas.height);
-    ctx.restore();
 
     // Only run detection every skipN frames
     if(frameIdx % skipN === 0){
       // Detect on lower-res offscreen for speed
       const res = PERF[perfMode].res;
-      offscreen.width=res; offscreen.height=Math.round(res*(video.videoHeight/video.videoWidth));
+      const aspect = video.videoHeight / video.videoWidth;
+      offscreen.width = res;
+      offscreen.height = Math.max(1, Math.round(res * aspect));
       offCtx.drawImage(video,0,0,offscreen.width,offscreen.height);
 
       try {
@@ -392,6 +391,7 @@ startBtn.addEventListener('click', async()=>{
     });
     video.srcObject=stream; await video.play();
     resize();
+    await tf.setBackend('webgl');
     await tf.ready();
     detector = await handPoseDetection.createDetector(
       handPoseDetection.SupportedModels.MediaPipeHands,
