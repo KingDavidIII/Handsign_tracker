@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HandConnect — Hand Tracking</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+  :root {
+    --bg:#080b0f; --panel:#0d1117; --border:rgba(255,255,255,0.07);
+    --accent:#00ffe0; --accent2:#ff4fd8; --accent3:#ffe500;
+    --text:#e8edf5; --muted:#5a6478; --green:#00ff88; --red:#ff4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;}
+  .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--accent);}
+  .logo span{color:var(--text);}
+  #statusDot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;transition:background .3s;}
+  #statusDot.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.5s infinite;}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+  #statusText{font-size:11px;color:var(--muted);}
+  #statusText.on{color:var(--green);}
+  .main{display:flex;flex:1;overflow:hidden;}
+  .video-area{flex:1;position:relative;background:#000;display:flex;align-items:center;justify-content:center;}
+  video{position:absolute;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);opacity:0;}
+  canvas{position:absolute;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+  .scanlines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px);pointer-events:none;z-index:5;}
+  .corner{position:absolute;width:22px;height:22px;border-color:var(--accent);border-style:solid;opacity:.5;z-index:6;}
+  .corner.tl{top:14px;left:14px;border-width:2px 0 0 2px;}
+  .corner.tr{top:14px;right:14px;border-width:2px 2px 0 0;}
+  .corner.bl{bottom:14px;left:14px;border-width:0 0 2px 2px;}
+  .corner.br{bottom:14px;right:14px;border-width:0 2px 2px 0;}
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,11,15,.95);z-index:20;gap:18px;transition:opacity .4s;}
+  .overlay.gone{opacity:0;pointer-events:none;}
+  .ov-icon{font-size:60px;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 0 18px var(--accent));}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  .ov-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;text-align:center;}
+  .ov-sub{font-size:11px;color:var(--muted);text-align:center;max-width:260px;line-height:1.8;}
+  #errBox{font-size:11px;color:var(--red);background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.25);border-radius:3px;padding:8px 12px;display:none;max-width:280px;text-align:center;line-height:1.6;}
+  #startBtn{background:var(--accent);color:var(--bg);border:none;padding:12px 32px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;border-radius:2px;text-transform:uppercase;transition:all .2s;}
+  #startBtn:hover{background:#fff;box-shadow:0 6px 20px rgba(0,255,224,.3);}
+  #startBtn:disabled{opacity:.5;cursor:not-allowed;}
+  .ring{display:inline-block;width:18px;height:18px;border:2px solid rgba(0,255,224,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .side{width:210px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+  .sec{padding:12px 14px;border-bottom:1px solid var(--border);}
+  .lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+  .rk{font-size:11px;color:var(--muted);}
+  .rv{font-size:13px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;}
+  .rv.ok{color:var(--green)} .rv.warn{color:var(--accent3)}
+  .gbox{background:rgba(0,255,224,.05);border:1px solid rgba(0,255,224,.14);border-radius:4px;padding:10px;text-align:center;}
+  #gicon{font-size:34px;display:block;margin-bottom:3px;transition:all .15s;}
+  #gname{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);}
+  #gsub{font-size:10px;color:var(--muted);margin-top:2px;}
+  .frow{display:flex;gap:4px;margin-top:4px;}
+  .fp{flex:1;height:26px;border-radius:3px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;font-size:8px;color:var(--muted);transition:all .12s;position:relative;overflow:hidden;}
+  .fp.on{border-color:var(--accent);color:var(--accent);}
+  .fp.on::before{content:'';position:absolute;bottom:0;left:0;right:0;height:55%;background:rgba(0,255,224,.14);}
+  .bar-wrap{margin-bottom:7px;}
+  .bar-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px;}
+  .track{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;}
+  .fill{height:100%;border-radius:2px;transition:width .08s;}
+  .fps-bars{display:flex;gap:2px;margin-top:4px;}
+  .fb{flex:1;height:14px;background:rgba(255,255,255,.05);border-radius:1px;transition:background .1s;}
+  .fb.l{background:var(--green)} .fb.m{background:var(--accent3)} .fb.s{background:var(--red)}
+  .leg{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+  .ld{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .ll{font-size:10px;color:var(--muted);}
+  .glist{font-size:11px;color:var(--muted);line-height:2.1;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Hand<span>Connect</span></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span id="statusDot"></span><span id="statusText">Inactive</span>
+  </div>
+  <div style="font-size:10px;color:var(--muted)">TF.js · MediaPipe</div>
+</div>
+
+<div class="main">
+  <div class="video-area">
+    <video id="video" playsinline autoplay muted></video>
+    <canvas id="canvas"></canvas>
+    <div class="scanlines"></div>
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+
+    <div class="overlay" id="overlay">
+      <div class="ov-icon">🖐️</div>
+      <div class="ov-title">Real-Time<br>Hand Tracking</div>
+      <div class="ov-sub">21-point skeleton · gesture detection · 2 hands · runs in browser</div>
+      <div id="errBox"></div>
+      <button id="startBtn">Enable Camera</button>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="sec">
+      <div class="lbl">Live Stats</div>
+      <div class="row"><span class="rk">Hands</span><span class="rv" id="hCount">0</span></div>
+      <div class="row"><span class="rk">FPS</span><span class="rv ok" id="fpsEl">—</span></div>
+      <div class="fps-bars" id="fpsBars">
+        <div class="fb"></div><div class="fb"></div><div class="fb"></div><div class="fb"></div>
+        <div class="fb"></div><div class="fb"></div><div class="fb"></div><div class="fb"></div>
+        <div class="fb"></div><div class="fb"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="lbl">Gesture</div>
+      <div class="gbox">
+        <span id="gicon">✋</span>
+        <div id="gname">—</div>
+        <div id="gsub">No hand detected</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="lbl">Finger State</div>
+      <div class="frow">
+        <div class="fp" id="f0">T</div><div class="fp" id="f1">I</div>
+        <div class="fp" id="f2">M</div><div class="fp" id="f3">R</div>
+        <div class="fp" id="f4">P</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="lbl">Hand Metrics</div>
+      <div class="bar-wrap">
+        <div class="bar-lbl"><span>Spread</span><span id="spV">0%</span></div>
+        <div class="track"><div class="fill" id="spB" style="width:0%;background:var(--accent)"></div></div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-lbl"><span>Curl</span><span id="cuV">0%</span></div>
+        <div class="track"><div class="fill" id="cuB" style="width:0%;background:var(--accent2)"></div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="lbl">Skeleton Colors</div>
+      <div class="leg"><div class="ld" style="background:#ff4fd8"></div><span class="ll">Thumb</span></div>
+      <div class="leg"><div class="ld" style="background:#00ffe0"></div><span class="ll">Index</span></div>
+      <div class="leg"><div class="ld" style="background:#ffe500"></div><span class="ll">Middle</span></div>
+      <div class="leg"><div class="ld" style="background:#00ff88"></div><span class="ll">Ring</span></div>
+      <div class="leg"><div class="ld" style="background:#ff7043"></div><span class="ll">Pinky</span></div>
+      <div class="leg"><div class="ld" style="background:#fff"></div><span class="ll">Palm</span></div>
+    </div>
+
+    <div class="sec">
+      <div class="lbl">Gestures</div>
+      <div class="glist">
+        ✊ Fist<br>🖐 Open Hand<br>✌️ Peace<br>👍 Thumbs Up<br>
+        👌 OK Sign<br>🤙 Call Me<br>☝️ Pointing<br>🤘 Rock On<br>🖕 Middle Finger
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TensorFlow.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.0.0/dist/hand-pose-detection.js"></script>
+
+<script>
+const video   = document.getElementById('video');
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const errBox  = document.getElementById('errBox');
+const startBtn= document.getElementById('startBtn');
+
+// UI refs
+const hCountEl = document.getElementById('hCount');
+const fpsEl    = document.getElementById('fpsEl');
+const gicon    = document.getElementById('gicon');
+const gname    = document.getElementById('gname');
+const gsub     = document.getElementById('gsub');
+const spV      = document.getElementById('spV');
+const spB      = document.getElementById('spB');
+const cuV      = document.getElementById('cuV');
+const cuB      = document.getElementById('cuB');
+const statusDot= document.getElementById('statusDot');
+const statusText=document.getElementById('statusText');
+const fpsBlocks= document.querySelectorAll('.fb');
+
+// Landmark connections
+const CONN = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],
+  [13,17],[17,18],[18,19],[19,20],
+  [0,17],[0,9]
+];
+
+function boneColor(a, b) {
+  const palm = [[0,5],[0,9],[0,17],[5,9],[9,13],[13,17]];
+  for (const [x,y] of palm) if ((a===x&&b===y)||(a===y&&b===x)) return '#ffffff';
+  const min = Math.min(a,b);
+  if (min<=4)  return '#ff4fd8';
+  if (min<=8)  return '#00ffe0';
+  if (min<=12) return '#ffe500';
+  if (min<=16) return '#00ff88';
+  return '#ff7043';
+}
+function jointColor(i) {
+  if (i===0)   return '#ffffff';
+  if (i<=4)    return '#ff4fd8';
+  if (i<=8)    return '#00ffe0';
+  if (i<=12)   return '#ffe500';
+  if (i<=16)   return '#00ff88';
+  return '#ff7043';
+}
+
+function d2(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+function fingerExtended(kp, tip, pip, wrist) {
+  return d2(kp[tip], kp[wrist]) > d2(kp[pip], kp[wrist]);
+}
+
+function fingerStates(kp) {
+  return {
+    thumb:  d2(kp[4],kp[17]) > d2(kp[3],kp[17]),
+    index:  fingerExtended(kp,8,6,0),
+    middle: fingerExtended(kp,12,10,0),
+    ring:   fingerExtended(kp,16,14,0),
+    pinky:  fingerExtended(kp,20,18,0),
+  };
+}
+
+function detectGesture(kp) {
+  const f = fingerStates(kp);
+  const n = [f.thumb,f.index,f.middle,f.ring,f.pinky].filter(Boolean).length;
+  if (!f.thumb&&!f.index&&!f.middle&&!f.ring&&!f.pinky)
+    return {icon:'✊',name:'Fist',sub:'All curled'};
+  if (f.thumb&&f.index&&f.middle&&f.ring&&f.pinky)
+    return {icon:'🖐',name:'Open Hand',sub:'5 fingers up'};
+  if (f.thumb&&!f.index&&!f.middle&&!f.ring&&!f.pinky)
+    return kp[4].y < kp[3].y
+      ? {icon:'👍',name:'Thumbs Up',sub:'Thumb extended'}
+      : {icon:'👎',name:'Thumbs Down',sub:'Thumb down'};
+  if (!f.thumb&&f.index&&f.middle&&!f.ring&&!f.pinky)
+    return {icon:'✌️',name:'Peace',sub:'Index + Middle'};
+  if (!f.thumb&&f.index&&!f.middle&&!f.ring&&!f.pinky)
+    return {icon:'☝️',name:'Pointing',sub:'Index only'};
+  if (!f.thumb&&f.index&&!f.middle&&!f.ring&&f.pinky)
+    return {icon:'🤘',name:'Rock On',sub:'Index + Pinky'};
+  if (f.thumb&&!f.index&&!f.middle&&!f.ring&&f.pinky)
+    return {icon:'🤙',name:'Call Me',sub:'Thumb + Pinky'};
+  if (d2(kp[4],kp[8])<30&&f.middle&&f.ring&&f.pinky)
+    return {icon:'👌',name:'OK Sign',sub:'Thumb meets index'};
+  if (!f.thumb&&!f.index&&f.middle&&!f.ring&&!f.pinky)
+    return {icon:'🖕',name:'Middle Finger',sub:'Middle only'};
+  return {icon:'✋',name:`${n} Fingers`,sub:'Custom pose'};
+}
+
+function spread(kp) {
+  const tips = [kp[4],kp[8],kp[12],kp[16],kp[20]];
+  let m=0;
+  for(let i=0;i<tips.length;i++)
+    for(let j=i+1;j<tips.length;j++) m=Math.max(m,d2(tips[i],tips[j]));
+  const w = canvas.width;
+  return Math.min((m/w)*400, 100);
+}
+function curl(kp) {
+  const f = fingerStates(kp);
+  return ([!f.index,!f.middle,!f.ring,!f.pinky].filter(Boolean).length/4)*100;
+}
+
+function drawSkeleton(kp) {
+  // Bones
+  for (const [a,b] of CONN) {
+    const p1=kp[a], p2=kp[b];
+    const c1=boneColor(a,b), c2=boneColor(b,a);
+    const grd=ctx.createLinearGradient(p1.x,p1.y,p2.x,p2.y);
+    grd.addColorStop(0,c1); grd.addColorStop(1,c2);
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y);
+    ctx.strokeStyle=grd; ctx.lineWidth=3;
+    ctx.shadowBlur=14; ctx.shadowColor=c1;
+    ctx.stroke(); ctx.shadowBlur=0;
+  }
+  // Joints
+  for(let i=0;i<kp.length;i++) {
+    const p=kp[i], c=jointColor(i);
+    const isTip=[4,8,12,16,20].includes(i);
+    const r = i===0?8 : isTip?7:5;
+    ctx.beginPath(); ctx.arc(p.x,p.y,r+4,0,Math.PI*2);
+    ctx.fillStyle=c+'38'; ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.fillStyle=c; ctx.shadowBlur=16; ctx.shadowColor=c; ctx.fill(); ctx.shadowBlur=0;
+    if(isTip){
+      ctx.beginPath(); ctx.arc(p.x,p.y,2.5,0,Math.PI*2);
+      ctx.fillStyle='#fff'; ctx.fill();
+    }
+  }
+}
+
+// FPS
+let lastT=0, frames=0, fps=0;
+const fpsHist=new Array(10).fill(0);
+function tickFPS(now) {
+  frames++;
+  if(now-lastT>=1000){
+    fps=Math.round(frames*1000/(now-lastT));
+    frames=0; lastT=now;
+    fpsHist.shift(); fpsHist.push(fps);
+    const mx=Math.max(...fpsHist,1);
+    fpsBlocks.forEach((b,i)=>{
+      b.className='fb';
+      if(fpsHist[i]>0) b.classList.add(fpsHist[i]>40?'l':fpsHist[i]>20?'m':'s');
+    });
+  }
+  fpsEl.textContent=fps||'—';
+  fpsEl.className='rv '+(fps>40?'ok':fps>20?'warn':'');
+}
+
+function updateUI(hands) {
+  const n=hands.length;
+  hCountEl.textContent=n;
+  hCountEl.className='rv '+(n>0?'ok':'');
+  if(n===0){
+    gicon.textContent='✋'; gname.textContent='—'; gsub.textContent='No hand detected';
+    spV.textContent='0%'; spB.style.width='0%';
+    cuV.textContent='0%'; cuB.style.width='0%';
+    ['f0','f1','f2','f3','f4'].forEach(id=>{ document.getElementById(id).className='fp'; });
+    return;
+  }
+  const kp=hands[0].keypoints;
+  const g=detectGesture(kp);
+  gicon.textContent=g.icon; gname.textContent=g.name; gsub.textContent=g.sub;
+  const sp=Math.round(spread(kp)), cu=Math.round(curl(kp));
+  spV.textContent=sp+'%'; spB.style.width=sp+'%';
+  cuV.textContent=cu+'%'; cuB.style.width=cu+'%';
+  const f=fingerStates(kp);
+  const keys=['thumb','index','middle','ring','pinky'];
+  keys.forEach((k,i)=>{
+    const el=document.getElementById('f'+i);
+    el.className='fp'+(f[k]?' on':'');
+  });
+}
+
+// Resize canvas to video area
+function resize() {
+  const area=document.querySelector('.video-area');
+  canvas.width=area.clientWidth;
+  canvas.height=area.clientHeight;
+}
+window.addEventListener('resize', resize);
+
+// Main loop
+let detector=null, running=false;
+async function loop() {
+  if(!running) return;
+  if(video.readyState>=2) {
+    const hands = await detector.estimateHands(video, {flipHorizontal:false});
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Draw mirrored video
+    ctx.save();
+    ctx.translate(canvas.width,0); ctx.scale(-1,1);
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    ctx.restore();
+
+    // Scale keypoints from video to canvas
+    const scaleX=canvas.width/video.videoWidth;
+    const scaleY=canvas.height/video.videoHeight;
+    const scaled=hands.map(h=>({
+      ...h,
+      keypoints: h.keypoints.map(kp=>({...kp, x:kp.x*scaleX, y:kp.y*scaleY}))
+    }));
+
+    scaled.forEach(h=>drawSkeleton(h.keypoints));
+    updateUI(scaled);
+    tickFPS(performance.now());
+  }
+  requestAnimationFrame(loop);
+}
+
+startBtn.addEventListener('click', async()=>{
+  startBtn.disabled=true;
+  startBtn.innerHTML='<span class="ring"></span> Loading model…';
+  errBox.style.display='none';
+
+  try {
+    // Get camera
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'}
+    });
+    video.srcObject=stream;
+    await video.play();
+    resize();
+
+    // Load TF.js model
+    await tf.ready();
+    detector = await handPoseDetection.createDetector(
+      handPoseDetection.SupportedModels.MediaPipeHands,
+      { runtime:'tfjs', modelType:'lite', maxHands:2 }
+    );
+
+    running=true;
+    overlay.classList.add('gone');
+    statusDot.classList.add('on');
+    statusText.textContent='Live';
+    statusText.className='on';
+    loop();
+
+  } catch(e) {
+    startBtn.disabled=false;
+    startBtn.textContent='Try Again';
+    errBox.style.display='block';
+    if(e.name==='NotAllowedError')
+      errBox.textContent='⚠ Camera access denied. Click the camera icon in your browser address bar and allow access, then try again.';
+    else if(e.name==='NotFoundError')
+      errBox.textContent='⚠ No camera found. Plug in a webcam and try again.';
+    else
+      errBox.textContent='⚠ Error: '+e.message+'. Try Chrome or Edge.';
+  }
+});
+</script>
+</body>
+</html>
